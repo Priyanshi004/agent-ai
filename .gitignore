@@ -52,6 +52,11 @@ client/.idea/
 *.swp
 *.swo
 
+# Secrets
+token.json
+credentials.json
+*.log
+
 # OS
 .DS_Store
 Thumbs.db
