@@ -25,6 +25,25 @@ app.add_middleware(
 class ChatRequest(BaseModel):
     message: str
 
+class UserLogin(BaseModel):
+    email: str
+    password: str
+    name: str = None
+
+class UserRegister(BaseModel):
+    email: str
+    password: str
+    name: str = None
+
+class UserAuth(BaseModel):
+    email: str
+    name: str = None
+
+# Mock user storage for demo
+mock_users = {
+    "test@example.com": {"password": "password123", "name": "Test User"}
+}
+
 # Check if the key is actually loaded
 api_key = os.getenv('GOOGLE_API_KEY')
 print(f"DEBUG: Google API Key loaded: {api_key is not None}")
@@ -52,6 +71,50 @@ try:
 except Exception as e:
     print(f"Error initializing LLM: {e}")
     traceback.print_exc()
+
+@app.post("/register")
+async def register(user: UserRegister):
+    if user.email in mock_users:
+        return {"success": False, "message": "User already exists"}
+    mock_users[user.email] = {"password": user.password, "name": user.name or "User"}
+    print(f"DEBUG: User registered: {user.email} (Name: {user.name})")
+    return {"success": True, "message": "User registered successfully", "name": user.name or "User"}
+
+@app.post("/login")
+async def login(user: UserLogin):
+    # Auto-register if user doesn't exist
+    if user.email not in mock_users:
+        mock_users[user.email] = {"password": user.password, "name": user.name or "User"}
+        print(f"DEBUG: Auto-registered user on login: {user.email}")
+        return {"success": True, "message": "Login successful (Auto-registered)", "name": user.name or "User"}
+    
+    # Existing user: update name if provided and password matches
+    if mock_users[user.email]["password"] == user.password:
+        if user.name:
+            mock_users[user.email]["name"] = user.name
+        print(f"DEBUG: Login successful for: {user.email} (Name: {mock_users[user.email]['name']})")
+        return {"success": True, "message": "Login successful", "name": mock_users[user.email]["name"]}
+    
+    print(f"DEBUG: Login failed for: {user.email}")
+    return {"success": False, "message": "Invalid password for existing email"}
+
+@app.post("/google-auth")
+async def google_auth(user: UserAuth):
+    if user.email not in mock_users:
+        mock_users[user.email] = {"password": "google-auth-pwd", "name": user.name or "Google User"}
+    elif user.name:
+        mock_users[user.email]["name"] = user.name
+    print(f"DEBUG: Google Auth successful for: {user.email} (Name: {mock_users[user.email]['name']})")
+    return {"success": True, "message": "Google authentication successful", "name": mock_users[user.email]["name"]}
+
+@app.post("/phone-auth")
+async def phone_auth(user: UserAuth):
+    if user.email not in mock_users:
+        mock_users[user.email] = {"password": "phone-auth-pwd", "name": user.name or "Phone User"}
+    elif user.name:
+        mock_users[user.email]["name"] = user.name
+    print(f"DEBUG: Phone Auth successful for: {user.email} (Name: {mock_users[user.email]['name']})")
+    return {"success": True, "message": "Phone authentication successful", "name": mock_users[user.email]["name"]}
 
 @app.post("/chat")
 async def chat(request: ChatRequest):

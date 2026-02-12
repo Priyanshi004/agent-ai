@@ -1,8 +1,9 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageSquare, Plus, Trash2, X } from 'lucide-react';
+import { MessageSquare, Plus, Trash2, X, LogOut } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useChatStore } from '../../store/useChatStore';
+import { useNavigate } from 'react-router-dom';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -11,6 +12,12 @@ interface SidebarProps {
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { clearChat } = useChatStore();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem('user_name');
+    navigate('/login');
+  };
 
   return (
     <AnimatePresence>
@@ -64,13 +71,20 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                <HistoryItem title="Debug Python Script" time="Yesterday" />
             </div>
 
-            <div className="p-4 border-t border-slate-800">
+            <div className="p-4 border-t border-slate-800 space-y-1">
                <button 
                  onClick={clearChat}
-                 className="flex items-center space-x-2 text-slate-400 hover:text-red-400 transition-colors text-sm w-full px-2 py-2 hover:bg-red-400/10 rounded-lg"
+                 className="flex items-center space-x-2 text-slate-400 hover:text-red-400 transition-colors text-sm w-full px-3 py-2 hover:bg-red-400/10 rounded-lg"
                >
                  <Trash2 className="w-4 h-4" />
                  <span>Clear Conversations</span>
+               </button>
+               <button 
+                 onClick={handleLogout}
+                 className="flex items-center space-x-2 text-slate-400 hover:text-white transition-colors text-sm w-full px-3 py-2 hover:bg-slate-800 rounded-lg"
+               >
+                 <LogOut className="w-4 h-4" />
+                 <span>Log Out</span>
                </button>
             </div>
           </motion.div>

@@ -11,9 +11,15 @@ export default function ChatPage() {
   const { messages, isTyping, addMessage, setTyping } = useChatStore();
   const [input, setInput] = useState('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [userName, setUserName] = useState<string>('User');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   const { isListening, transcript, startListening, stopListening, isSupported } = useSpeechRecognition();
+
+  useEffect(() => {
+    const name = localStorage.getItem('user_name');
+    if (name) setUserName(name);
+  }, []);
 
   // Sync transcript to input
   useEffect(() => {
@@ -89,12 +95,18 @@ export default function ChatPage() {
       
       <main className="flex-1 overflow-y-auto p-4 space-y-4 scroll-smooth">
         {messages.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full text-slate-500">
-             <div className="w-16 h-16 bg-slate-800/50 rounded-2xl flex items-center justify-center mb-4 animate-bounce-slow">
-               <span className="text-3xl">✨</span>
+          <div className="flex flex-col items-center justify-center h-full text-slate-500 max-w-2xl mx-auto px-4">
+             <div className="w-20 h-20 bg-linear-to-tr from-blue-600/20 to-emerald-600/20 rounded-3xl flex items-center justify-center mb-8 rotate-3 hover:rotate-6 transition-transform">
+               <span className="text-4xl animate-pulse">✨</span>
              </div>
-             <p className="text-lg font-medium">Start a conversation...</p>
-             <p className="text-sm opacity-50 mt-2">Try "Help me write a story"</p>
+             <h2 className="text-3xl md:text-4xl font-extrabold text-white mb-4 text-center">
+               Hi <span className="text-transparent bg-clip-text bg-linear-to-r from-blue-400 to-emerald-400 capitalize">{userName}</span>,
+               <br />
+               How can I help you today?
+             </h2>
+             <p className="text-sm opacity-60 text-center max-w-sm">
+               Experience the power of Gemini 1.5 Flash. Try asking about your calendar or writing a story.
+             </p>
           </div>
         )}
         

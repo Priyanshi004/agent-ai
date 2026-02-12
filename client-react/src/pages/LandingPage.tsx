@@ -1,10 +1,52 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Sparkles, MessageSquare, Zap, Shield } from 'lucide-react';
+import { ArrowRight, Sparkles, MessageSquare, Zap, Shield, Chrome, Loader2 } from 'lucide-react';
+import { useGoogleLogin } from '@react-oauth/google';
 
 export default function LandingPage() {
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSocialAuth = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      setIsLoading(true);
+      setError('');
+      try {
+        // Fetch user info from Google
+        const userInfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+        });
+        const userInfo = await userInfoRes.json();
+        
+        // Sync with our backend
+        const response = await fetch(`http://localhost:8000/google-auth`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            email: userInfo.email,
+            name: userInfo.name
+          }),
+        });
+        const data = await response.json();
+        if (data.success) {
+          localStorage.setItem('user_name', data.name || userInfo.name || 'Google User');
+          navigate('/chat');
+        } else {
+          setError(data.message || `Google authentication failed`);
+        }
+      } catch (err) {
+        setError(`Google authentication failed. Is the server running?`);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    onError: () => {
+      setError('Google Login Failed');
+      setIsLoading(false);
+    }
+  });
 
   return (
     <div className="min-h-screen bg-slate-950 text-white overflow-hidden relative selection:bg-blue-500/30">
@@ -20,13 +62,14 @@ export default function LandingPage() {
         <motion.div 
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-emerald-400 text-transparent bg-clip-text"
+          className="text-2xl font-bold bg-linear-to-r from-blue-400 to-emerald-400 text-transparent bg-clip-text"
         >
           AI Assistant
         </motion.div>
         <motion.button
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
+          onClick={() => navigate('/login')}
           className="px-6 py-2 rounded-full border border-slate-700 hover:bg-slate-800 transition-colors text-sm font-medium"
         >
           Sign In
@@ -52,7 +95,7 @@ export default function LandingPage() {
         >
             Your Intelligent
             <br />
-            <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-emerald-400 text-transparent bg-clip-text animate-gradient">
+            <span className="bg-linear-to-r from-blue-400 via-purple-400 to-emerald-400 text-transparent bg-clip-text animate-gradient">
               Creative Companion
             </span>
         </motion.h1>
@@ -74,7 +117,7 @@ export default function LandingPage() {
           className="flex flex-col sm:flex-row gap-4"
         >
           <button 
-            onClick={() => navigate('/chat')}
+            onClick={() => navigate('/login')}
             className="group px-8 py-4 bg-blue-600 hover:bg-blue-500 rounded-full font-semibold text-lg transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2 shadow-lg shadow-blue-600/25"
           >
             Get Started
@@ -84,6 +127,42 @@ export default function LandingPage() {
           <button className="px-8 py-4 bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 rounded-full font-semibold text-lg transition-all hover:scale-105 active:scale-95 backdrop-blur-sm">
              View Demo
           </button>
+        </motion.div>
+
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+          className="mt-12 w-full max-w-sm mx-auto"
+        >
+          <div className="relative my-8">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-slate-800"></div>
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-slate-950 px-4 text-slate-500">Or continue with</span>
+            </div>
+          </div>
+
+          <button 
+            type="button"
+            disabled={isLoading}
+            onClick={() => handleSocialAuth()}
+            className="w-full flex items-center justify-center gap-3 py-4 bg-slate-900/40 border border-slate-800 rounded-full hover:bg-slate-800 transition-all hover:scale-[1.02] active:scale-[0.98] group"
+          >
+            {isLoading ? (
+              <Loader2 className="w-5 h-5 animate-spin text-blue-400" />
+            ) : (
+              <>
+                <Chrome className="w-5 h-5 text-blue-400 group-hover:scale-110 transition-transform" />
+                <span className="font-medium text-slate-200">Continue with Google</span>
+              </>
+            )}
+          </button>
+          
+          {error && (
+            <p className="mt-4 text-sm text-red-400 text-center animate-pulse">{error}</p>
+          )}
         </motion.div>
 
         {/* Feature Grid */}
